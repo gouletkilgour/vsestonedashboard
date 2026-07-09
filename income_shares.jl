@@ -7,7 +7,7 @@ using HTTP, JSON3, Dates
 # Table  : 11-10-0055-01  High income tax filers in Canada
 # Statistic: Share of income (dimension 4, member 11)
 # Concepts: Market income (1), Total income (2), After-tax income (3)
-# Groups  : Top 1% (3), Top 10% (5), Top 50% (6), Bottom 50% (10)
+# Groups  : Top 1% (3), Top 10% (5), Bottom 50% (10)
 # Docs    : https://www.statcan.gc.ca/en/developers/wds/user-guide
 # -----------------------------------------------------------------------------
 
@@ -16,72 +16,61 @@ const REGIONS = [
     "Canada"                    => [
         "Top 1%"     => (62791037, 62802587, 62814137),
         "Top 10%"    => (62791087, 62802637, 62814187),
-        "Top 50%"    => (62791112, 62802662, 62814212),
         "Bottom 50%" => (62791212, 62802762, 62814312),
     ],
     "Newfoundland and Labrador" => [
         "Top 1%"     => (62791587, 62803137, 62814687),
         "Top 10%"    => (62791637, 62803187, 62814737),
-        "Top 50%"    => (62791662, 62803212, 62814762),
         "Bottom 50%" => (62791762, 62803312, 62814862),
     ],
     "Prince Edward Island"      => [
         "Top 1%"     => (62791862, 62803412, 62814962),
         "Top 10%"    => (62791912, 62803462, 62815012),
-        "Top 50%"    => (62791937, 62803487, 62815037),
         "Bottom 50%" => (62792037, 62803587, 62815137),
     ],
     "Nova Scotia"               => [
         "Top 1%"     => (62792137, 62803687, 62815237),
         "Top 10%"    => (62792187, 62803737, 62815287),
-        "Top 50%"    => (62792212, 62803762, 62815312),
         "Bottom 50%" => (62792312, 62803862, 62815412),
     ],
     "New Brunswick"             => [
         "Top 1%"     => (62792412, 62803962, 62815512),
         "Top 10%"    => (62792462, 62804012, 62815562),
-        "Top 50%"    => (62792487, 62804037, 62815587),
         "Bottom 50%" => (62792587, 62804137, 62815687),
     ],
     "Quebec"                    => [
         "Top 1%"     => (62792687, 62804237, 62815787),
         "Top 10%"    => (62792737, 62804287, 62815837),
-        "Top 50%"    => (62792762, 62804312, 62815862),
         "Bottom 50%" => (62792862, 62804412, 62815962),
     ],
     "Ontario"                   => [
         "Top 1%"     => (62792962, 62804512, 62816062),
         "Top 10%"    => (62793012, 62804562, 62816112),
-        "Top 50%"    => (62793037, 62804587, 62816137),
         "Bottom 50%" => (62793137, 62804687, 62816237),
     ],
     "Manitoba"                  => [
         "Top 1%"     => (62793512, 62805062, 62816612),
         "Top 10%"    => (62793562, 62805112, 62816662),
-        "Top 50%"    => (62793587, 62805137, 62816687),
         "Bottom 50%" => (62793687, 62805237, 62816787),
     ],
     "Saskatchewan"              => [
         "Top 1%"     => (62793787, 62805337, 62816887),
         "Top 10%"    => (62793837, 62805387, 62816937),
-        "Top 50%"    => (62793862, 62805412, 62816962),
         "Bottom 50%" => (62793962, 62805512, 62817062),
     ],
     "Alberta"                   => [
         "Top 1%"     => (62794062, 62805612, 62817162),
         "Top 10%"    => (62794112, 62805662, 62817212),
-        "Top 50%"    => (62794137, 62805687, 62817237),
         "Bottom 50%" => (62794237, 62805787, 62817337),
     ],
     "British Columbia"          => [
         "Top 1%"     => (62801762, 62813312, 62824862),
         "Top 10%"    => (62801812, 62813362, 62824912),
-        "Top 50%"    => (62801837, 62813387, 62824937),
         "Bottom 50%" => (62801937, 62813487, 62825037),
     ],
 ]
 
-const GROUPS    = ["Top 1%", "Top 10%", "Top 50%", "Bottom 50%"]
+const GROUPS    = ["Top 1%", "Top 10%", "Bottom 50%"]
 const CONCEPTS  = ["Market income", "Total income", "After-tax income"]
 const N_PERIODS = 50   # 1982–2023 annual; fetch up to 50 periods
 const ENDPOINT  = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
@@ -392,7 +381,7 @@ html = """<!DOCTYPE html>
     <div class="prose">
       <h2>Income Shares</h2>
       <p>
-        An income share measures the fraction of all income that is received by a particular group of individuals. These series focus on the income share of a particular segment of the distribution (i.e., top 1%, top 10%, top 50%, bottom 50%).
+        An income share measures the fraction of all income that is received by a particular group of individuals. These series focus on the income share of a particular segment of the distribution (i.e., top 1%, top 10%, bottom 50%).
        </p>
         <p>  
         For example, if the top 1%'s share of market income is 15%, it means that the highest-earning 1% in terms of market income collectively received 15% of all market income. 
@@ -447,7 +436,6 @@ html = """<!DOCTYPE html>
         <select id="group-select">
           <option value="Top 1%">Top 1%</option>
           <option value="Top 10%">Top 10%</option>
-          <option value="Top 50%">Top 50%</option>
           <option value="Bottom 50%">Bottom 50%</option>
         </select>
       </div>
@@ -467,7 +455,6 @@ html = """<!DOCTYPE html>
         <select id="rank-group">
           <option value="Top 1%">Top 1%</option>
           <option value="Top 10%">Top 10%</option>
-          <option value="Top 50%">Top 50%</option>
           <option value="Bottom 50%">Bottom 50%</option>
         </select>
       </div>
