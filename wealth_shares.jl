@@ -257,7 +257,7 @@ For example, if the top 1%’s share of net personal wealth is 15%, it means tha
         x: 0.5, y: noteY,
         xanchor: "center", yanchor: "bottom",
         showarrow: false,
-        text: "Chart created by the Stone Centre on Wealth and Income Inequality<br>at the Vancouver School of Economics (UBC) using data from the World Inequality Database (WID.world)",
+        text: "Chart created by the Stone Centre on Wealth and Income Inequality<br>at the Vancouver School of Economics (UBC) using data from the World Inequality Database",
         font: { size: 9, color: "#b0b0b0" },
       }],
     };
