@@ -76,7 +76,7 @@ html = """<!DOCTYPE html>
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      min-height: 520px;
+      min-height: 500px;
     }
 
     .section-label {
@@ -172,7 +172,7 @@ For example, if the top 1%’s share of net personal wealth is 15%, it means tha
   
  <h2>Unit of Analysis</h2>
       <p>
-        These series use the "equal-split adults" convention: wealth is measured at the individual level (adults aged 20+), but resources are split equally between partners within a couple.
+        These series are based on individual, not household, wealth – but household wealth is assumed to be split equally between household members. 
       </p>
 
   
@@ -193,7 +193,7 @@ For example, if the top 1%’s share of net personal wealth is 15%, it means tha
      
 
       <p class="source">
-        Data source: World Inequality Database (WID.world), variable <code>shweal___992_j</code>, Canada
+        Data source: World Inequality Database
       </p>
     </div>
   </section>
@@ -238,17 +238,18 @@ For example, if the top 1%’s share of net personal wealth is 15%, it means tha
     }];
   }
 
-  var MARGIN_T = 50, MARGIN_B = 200;
+  var MARGIN_T = 50, MARGIN_B = 140;
 
   function buildLayout(group) {
-    var el    = document.getElementById("chart");
-    var plotH = Math.max((el.offsetHeight || 480) - MARGIN_T - MARGIN_B, 80);
-    var noteY = -((MARGIN_B - 15) / plotH);
+    var el      = document.getElementById("chart");
+    var plotH   = Math.max((el.offsetHeight || 480) - MARGIN_T - MARGIN_B, 80);
+    var legendY = -(45 / plotH);
+    var noteY   = -((MARGIN_B - 15) / plotH);
     return {
       title: { text: "Share of Net Personal Wealth \\u2013 " + group + " \\u2013 Canada" },
       xaxis: { title: { text: "Year" } },
       yaxis: { title: { text: "Share of Wealth (%)" } },
-      legend: { x: 0.5, xanchor: "center", y: -0.15, orientation: "h" },
+      legend: { x: 0.5, xanchor: "center", y: legendY, orientation: "h" },
       margin: { l: 60, b: MARGIN_B, r: 20, t: MARGIN_T },
       paper_bgcolor: "white",
       plot_bgcolor: "#E5ECF6",
