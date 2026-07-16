@@ -4,3 +4,4 @@ Click on the following to open each dashboard page:
 - [Gini Coefficients of Adjusted Income](https://gouletkilgour.github.io/vsestonedashboard/gini.html)
 - [Income Shares](https://gouletkilgour.github.io/vsestonedashboard/income_shares.html)
 - [Wealth Shares](https://gouletkilgour.github.io/vsestonedashboard/wealth_shares.html)
+- [Wealth Distribution and Composition](https://gouletkilgour.github.io/vsestonedashboard/wealth_distribution.html)
