@@ -11,3 +11,4 @@ This repository contains draft pages for a dashboard on inequality in Canada.
 
 - [Gini Coefficients of Adjusted Income (Data)](https://gouletkilgour.github.io/vsestonedashboard/gini.html)
 - [Income Shares (Data)](https://gouletkilgour.github.io/vsestonedashboard/income_shares.html)
+- [Income Inequality in Canada: The Past 50 Years (Article)](https://gouletkilgour.github.io/vsestonedashboard/income_inequality.html)
