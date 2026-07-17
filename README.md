@@ -1,7 +1,11 @@
-This repository contains draft pages for a dashboard on inequality in Canada. Each page presents a different series or dimension of inequality, with a description and interactive chart.
+This repository contains draft pages for a dashboard on inequality in Canada. 
 
-Click on the following to open each dashboard page:
-- [Gini Coefficients of Adjusted Income](https://gouletkilgour.github.io/vsestonedashboard/gini.html)
-- [Income Shares](https://gouletkilgour.github.io/vsestonedashboard/income_shares.html)
-- [Wealth Shares](https://gouletkilgour.github.io/vsestonedashboard/wealth_shares.html)
-- [Wealth Distribution and Composition](https://gouletkilgour.github.io/vsestonedashboard/wealth_distribution.html)
+**Wealth Inequality**
+
+- [Wealth Distribution and Composition (Data)](https://gouletkilgour.github.io/vsestonedashboard/wealth_distribution.html)
+- [Wealth Inequality in Canada Since 2010 (Article)](https://gouletkilgour.github.io/vsestonedashboard/wealth_distribution_post.html)
+
+**Income Inequality**
+
+- [Gini Coefficients of Adjusted Income (Data)](https://gouletkilgour.github.io/vsestonedashboard/gini.html)
+- [Income Shares (Data)](https://gouletkilgour.github.io/vsestonedashboard/income_shares.html)
