@@ -6,19 +6,22 @@ using HTTP, JSON3, Dates
 # -- StatsCan WDS API ---------------------------------------------------------
 # Table    : 36-10-0660-01  Distributions of household economic accounts,
 #            wealth, by characteristic, Canada, quarterly
-# Dimensions used (coordinate = "1.<stat>.<quintile>.<wealth>.0.0.0.0.0.0"):
+# Dimensions used (coordinate = "1.<stat>.<generation>.<wealth>.0.0.0.0.0.0"):
 #   2 Statistics      -> Value (1), Distribution of value (2), Value per household (3)
-#   3 Characteristics -> wealth quintiles (53-57)
+#   3 Characteristics -> generation of major income earner (49-52)
 #   4 Wealth          -> asset / liability / net worth categories (1-11)
+# Generations are defined by the birth year of the household's major income
+# earner: pre-1946 (before 1946), baby boom (1946-1964), generation X
+# (1965-1980), millennials (after 1980; StatsCan folds generation Z into this
+# group due to small sample size).
 # Docs: https://www.statcan.gc.ca/en/developers/wds/user-guide
 # -----------------------------------------------------------------------------
 
-const QUINTILES = [
-    "Lowest wealth quintile"  => 53,
-    "Second wealth quintile"  => 54,
-    "Third wealth quintile"   => 55,
-    "Fourth wealth quintile"  => 56,
-    "Highest wealth quintile" => 57,
+const GENERATIONS = [
+    "Pre-1946"     => 49,
+    "Baby boom"    => 50,
+    "Generation X" => 51,
+    "Millennials"  => 52,
 ]
 
 const STATS = [
@@ -47,14 +50,14 @@ const N_PERIODS      = 90                  # buffer of recent quarters; filtered
 const META_ENDPOINT  = "https://www150.statcan.gc.ca/t1/wds/rest/getSeriesInfoFromCubePidCoord"
 const DATA_ENDPOINT  = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
 
-coordinate(stat_id, quintile_id, wealth_id) = "1.$(stat_id).$(quintile_id).$(wealth_id).0.0.0.0.0.0"
+coordinate(stat_id, generation_id, wealth_id) = "1.$(stat_id).$(generation_id).$(wealth_id).0.0.0.0.0.0"
 
-println("Looking up vector IDs for wealth distribution series...")
+println("Looking up vector IDs for wealth distribution by generation series...")
 
-combo_ids = [(qid, sid, wid) for (_, qid) in QUINTILES for (_, sid) in STATS for (_, wid) in WEALTH_TYPES]
+combo_ids = [(gid, sid, wid) for (_, gid) in GENERATIONS for (_, sid) in STATS for (_, wid) in WEALTH_TYPES]
 
-coords_payload = [Dict("productId" => PRODUCT_ID, "coordinate" => coordinate(sid, qid, wid))
-                   for (qid, sid, wid) in combo_ids]
+coords_payload = [Dict("productId" => PRODUCT_ID, "coordinate" => coordinate(sid, gid, wid))
+                   for (gid, sid, wid) in combo_ids]
 
 meta_resp = HTTP.post(META_ENDPOINT, ["Content-Type" => "application/json"], JSON3.write(coords_payload))
 meta_parsed = JSON3.read(String(meta_resp.body))
@@ -67,10 +70,10 @@ end
 
 vector_ids = Int[]
 key_for_vector = Dict{Int, Tuple{String,String,String}}()
-for (quintile, qid) in QUINTILES, (stat, sid) in STATS, (wealth, wid) in WEALTH_TYPES
-    vid = vector_for_coord[coordinate(sid, qid, wid)]
+for (generation, gid) in GENERATIONS, (stat, sid) in STATS, (wealth, wid) in WEALTH_TYPES
+    vid = vector_for_coord[coordinate(sid, gid, wid)]
     push!(vector_ids, vid)
-    key_for_vector[vid] = (quintile, stat, wealth)
+    key_for_vector[vid] = (generation, stat, wealth)
 end
 
 println("Fetching data for $(length(vector_ids)) series from Statistics Canada...")
@@ -85,17 +88,17 @@ function quarter_label(d::Date)
 end
 
 data = Dict{String, Dict{String, Dict{String, Dict{String, Vector}}}}()
-for (quintile, _) in QUINTILES
-    data[quintile] = Dict{String, Dict{String, Dict{String, Vector}}}()
+for (generation, _) in GENERATIONS
+    data[generation] = Dict{String, Dict{String, Dict{String, Vector}}}()
     for (stat, _) in STATS
-        data[quintile][stat] = Dict{String, Dict{String, Vector}}()
+        data[generation][stat] = Dict{String, Dict{String, Vector}}()
     end
 end
 
 for item in data_parsed
     item[:status] == "SUCCESS" || error("Data API error: $(item[:status])")
     vid = item[:object][:vectorId]
-    quintile, stat, wealth = key_for_vector[vid]
+    generation, stat, wealth = key_for_vector[vid]
     xs     = String[]   # ISO dates, so the chart's time axis reflects true elapsed time
     labels = String[]   # "20XX QN" labels for hover text and Q4 tick marks
     ys     = Float64[]
@@ -107,7 +110,7 @@ for item in data_parsed
         push!(labels, quarter_label(d))
         push!(ys, round(Float64(p[:value]), digits=1))
     end
-    data[quintile][stat][wealth] = Dict("x" => xs, "label" => labels, "y" => ys)
+    data[generation][stat][wealth] = Dict("x" => xs, "label" => labels, "y" => ys)
 end
 
 data_json = JSON3.write(data)
@@ -118,7 +121,7 @@ html = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wealth Distribution and Composition by Quintile</title>
+  <title>Wealth Distribution and Composition by Generation</title>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -241,7 +244,7 @@ html = """<!DOCTYPE html>
 <body>
 
 <header>
-  <h1>Wealth Distribution and Composition by Quintile</h1>
+  <h1>Wealth Distribution and Composition by Generation</h1>
 </header>
 
 <main>
@@ -250,23 +253,23 @@ html = """<!DOCTYPE html>
     <div class="prose">
 
       <p>
-        This chart shows how household assets, liabilities, and net worth (wealth) are distributed across households, grouped into five wealth quintiles.
+        This chart shows how household assets, liabilities, and net worth (wealth) are distributed across households, grouped into four generations.
       </p>
 
       <h2>Unit of Analysis</h2>
       <p>
-        These series are based on household (not individual) wealth. Households are ranked and grouped into quintiles by net worth, from the lowest quintile (least wealthy 20% of households) to the highest quintile (wealthiest 20% of households).
+        These series are based on household (not individual) wealth. Households are grouped by generation, based on the birth year of the household's major income earner (highest income before tax): pre-1946 (born before 1946), baby boom (born 1946-1964), generation X (born 1965-1980), and millennials (born after 1980 - Statistics Canada folds generation Z into this group due to small sample size).
       </p>
 
       <h2>Statistics</h2>
       <p>
-        <strong>Value</strong> is the aggregate dollar amount held by all households in a given quintile, expressed in millions of dollars.
+        <strong>Value</strong> is the aggregate dollar amount held by all households in a given generation, expressed in millions of dollars.
       </p>
       <p>
-        <strong>Distribution of value</strong> is the share of the national total held by a given quintile, expressed as a percentage.
+        <strong>Distribution of value</strong> is the share of the national total held by a given generation, expressed as a percentage.
       </p>
       <p>
-        <strong>Value per household</strong> is the average dollar amount per household within a given quintile.
+        <strong>Value per household</strong> is the average dollar amount per household within a given generation.
       </p>
 
       <h2>Wealth Categories</h2>
@@ -296,13 +299,12 @@ html = """<!DOCTYPE html>
     <div class="section-label">Chart</div>
     <div class="chart-controls">
       <div class="ctrl-group">
-        <span class="chart-ctrl-label">Wealth quintile:</span>
-        <select id="quintile-select">
-          <option value="Lowest wealth quintile">Lowest wealth quintile</option>
-          <option value="Second wealth quintile">Second wealth quintile</option>
-          <option value="Third wealth quintile">Third wealth quintile</option>
-          <option value="Fourth wealth quintile">Fourth wealth quintile</option>
-          <option value="Highest wealth quintile" selected>Highest wealth quintile</option>
+        <span class="chart-ctrl-label">Generation:</span>
+        <select id="generation-select">
+          <option value="Pre-1946">Pre-1946</option>
+          <option value="Baby boom" selected>Baby boom</option>
+          <option value="Generation X">Generation X</option>
+          <option value="Millennials">Millennials</option>
         </select>
       </div>
       <div class="ctrl-group">
@@ -384,10 +386,10 @@ html = """<!DOCTYPE html>
 
   const COMPONENT_COLORS = ["#636efa", "#ef553b"];
 
-  let currentQuintile = "Highest wealth quintile";
-  let currentStat     = "Distribution of value";
-  let currentWealth   = "Net worth (wealth)";
-  let currentFreq     = "Annual";
+  let currentGeneration = "Baby boom";
+  let currentStat        = "Distribution of value";
+  let currentWealth      = "Net worth (wealth)";
+  let currentFreq         = "Annual";
 
   const QUARTERLY_START = "2019-10-01";
 
@@ -438,8 +440,8 @@ html = """<!DOCTYPE html>
     return traces.concat(markers);
   }
 
-  function buildBarTrace(quintile, stat, wealth, freq, color, labelOverride) {
-    const s = filterByFrequency(DATA[quintile][stat][wealth], freq);
+  function buildBarTrace(generation, stat, wealth, freq, color, labelOverride) {
+    const s = filterByFrequency(DATA[generation][stat][wealth], freq);
     const label = labelOverride || wealth;
     return {
       x: s.x,
@@ -455,8 +457,8 @@ html = """<!DOCTYPE html>
   // The green connected-line-and-point trace showing a composite's own real total,
   // overlaid on top of its component bars - so there's always something to hover
   // that reports the whole, not just the parts.
-  function buildTotalLine(quintile, stat, wealth, freq) {
-    const s = filterByFrequency(DATA[quintile][stat][wealth], freq);
+  function buildTotalLine(generation, stat, wealth, freq) {
+    const s = filterByFrequency(DATA[generation][stat][wealth], freq);
     return {
       x: s.x,
       y: s.y,
@@ -470,7 +472,7 @@ html = """<!DOCTYPE html>
     };
   }
 
-  function buildTrace(quintile, stat, wealth, freq) {
+  function buildTrace(generation, stat, wealth, freq) {
     const decomp = DECOMPOSITIONS[wealth];
 
     // Net worth = Total assets - Total liabilities. For the dollar-based stats,
@@ -479,10 +481,10 @@ html = """<!DOCTYPE html>
     // showing how the two nets out over time.
     if (wealth === "Net worth (wealth)" && stat !== "Distribution of value") {
       const bars = withHoverMarkers([
-        buildBarTrace(quintile, stat, "Total assets", freq, COMPONENT_COLORS[0]),
-        buildBarTrace(quintile, stat, "Total liabilities", freq, COMPONENT_COLORS[1]),
+        buildBarTrace(generation, stat, "Total assets", freq, COMPONENT_COLORS[0]),
+        buildBarTrace(generation, stat, "Total liabilities", freq, COMPONENT_COLORS[1]),
       ], false);
-      return bars.concat([buildTotalLine(quintile, stat, wealth, freq)]);
+      return bars.concat([buildTotalLine(generation, stat, wealth, freq)]);
     }
 
     // "Distribution of value" for a part is that part's own share of the national
@@ -492,11 +494,11 @@ html = """<!DOCTYPE html>
     // share - so this statistic is never broken down, even for composite types.
     if (decomp && stat !== "Distribution of value") {
       const bars = withHoverMarkers(decomp.map((component, i) =>
-        buildBarTrace(quintile, stat, component, freq, COMPONENT_COLORS[i])
+        buildBarTrace(generation, stat, component, freq, COMPONENT_COLORS[i])
       ));
-      return bars.concat([buildTotalLine(quintile, stat, wealth, freq)]);
+      return bars.concat([buildTotalLine(generation, stat, wealth, freq)]);
     }
-    const s = filterByFrequency(DATA[quintile][stat][wealth], freq);
+    const s = filterByFrequency(DATA[generation][stat][wealth], freq);
     return [{
       x: s.x,
       y: s.y,
@@ -512,20 +514,20 @@ html = """<!DOCTYPE html>
 
   var MARGIN_T = 50, MARGIN_B = 160;
 
-  function buildLayout(quintile, stat, wealth, freq) {
+  function buildLayout(generation, stat, wealth, freq) {
     var el      = document.getElementById("chart");
     var plotH   = Math.max((el.offsetHeight || 480) - MARGIN_T - MARGIN_B, 80);
     var legendY = -(75 / plotH);
     var noteY   = -((MARGIN_B - 15) / plotH);
     var isNetWorthSplit = wealth === "Net worth (wealth)" && stat !== "Distribution of value";
     var isBreakdown = (!!DECOMPOSITIONS[wealth] && stat !== "Distribution of value") || isNetWorthSplit;
-    var s = filterByFrequency(DATA[quintile][stat][wealth], freq);
+    var s = filterByFrequency(DATA[generation][stat][wealth], freq);
     var tickvals = [], ticktext = [];
     s.label.forEach(function(lab, i) {
       if (lab.endsWith("Q4")) { tickvals.push(s.x[i]); ticktext.push(lab); }
     });
     return {
-      title: { text: titleCase(wealth.replace(" (wealth)", "")) + " \\u2013 " + titleCase(quintile) + " \\u2013 Canada" },
+      title: { text: titleCase(wealth.replace(" (wealth)", "")) + " \\u2013 " + titleCase(generation) + " \\u2013 Canada" },
       xaxis: { title: { text: "Quarter" }, type: "date", tickmode: "array", tickvals: tickvals, ticktext: ticktext },
       yaxis: { title: { text: stat === "Distribution of value" ? shareAxisLabel(wealth) : STAT_INFO[stat].axisTitle } },
       barmode: isNetWorthSplit ? "group" : "relative",
@@ -546,11 +548,11 @@ html = """<!DOCTYPE html>
   }
 
   function update() {
-    Plotly.react("chart", buildTrace(currentQuintile, currentStat, currentWealth, currentFreq), buildLayout(currentQuintile, currentStat, currentWealth, currentFreq), { responsive: true });
+    Plotly.react("chart", buildTrace(currentGeneration, currentStat, currentWealth, currentFreq), buildLayout(currentGeneration, currentStat, currentWealth, currentFreq), { responsive: true });
   }
 
-  document.getElementById("quintile-select").addEventListener("change", function () {
-    currentQuintile = this.value;
+  document.getElementById("generation-select").addEventListener("change", function () {
+    currentGeneration = this.value;
     update();
   });
 
@@ -569,13 +571,13 @@ html = """<!DOCTYPE html>
     update();
   });
 
-  Plotly.newPlot("chart", buildTrace(currentQuintile, currentStat, currentWealth, currentFreq), buildLayout(currentQuintile, currentStat, currentWealth, currentFreq), { responsive: true });
+  Plotly.newPlot("chart", buildTrace(currentGeneration, currentStat, currentWealth, currentFreq), buildLayout(currentGeneration, currentStat, currentWealth, currentFreq), { responsive: true });
 
   var resizeTimer;
   new ResizeObserver(function() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function() {
-      Plotly.relayout("chart", buildLayout(currentQuintile, currentStat, currentWealth, currentFreq));
+      Plotly.relayout("chart", buildLayout(currentGeneration, currentStat, currentWealth, currentFreq));
     }, 50);
   }).observe(document.getElementById("chart"));
 </script>
@@ -583,7 +585,7 @@ html = """<!DOCTYPE html>
 </body>
 </html>"""
 
-output = joinpath(@__DIR__, "wealth_distribution.html")
+output = joinpath(@__DIR__, "wealth_distribution_generations.html")
 write(output, html)
 println("Saved -> $output")
 
